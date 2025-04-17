@@ -1,0 +1,5 @@
+# render.yaml
+cron:
+  - name: daily-stock-update
+    schedule: "15 12 * * *"  # 6PM Nepal time is 12:15 UTC
+    command: "python daily_update.py"
