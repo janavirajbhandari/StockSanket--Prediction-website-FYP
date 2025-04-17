@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Stocks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    {% extends 'base.html' %}
+    {% block content %}
+    <div class="flex">
+        {% include 'sidebar.html' %}
+        <div class="p-10 w-full ml-40 mt-11">
+            <h1 class="text-[#001F7B] text-3xl font-bold mb-4">Compare Stocks</h1>
+
+            <!-- Stock Comparison Bar -->
+            <div class="relative bg-white border border-gray-300 rounded-lg px-4 py-2 shadow-md w-full mb-4">
+                <div id="stock-tags" class="flex flex-wrap space-x-2 mb-2"></div>
+                <input id="stock-input" type="text" placeholder="Search for a stock..." onkeyup="searchStock(this.value)"
+                    class="border-none px-2 w-full focus:outline-none">
+                <div id="stock-suggestions" class="absolute bg-white border border-gray-300 w-full mt-1 shadow-md rounded hidden"></div>
+                <button onclick="addStock()" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow-md hover:bg-blue-800 mt-2">
+                    Add
+                </button>
+            </div>
+
+            <!-- Time Filters -->
+            <div class="flex space-x-4 mb-4">
+                <button class="px-4 py-2 bg-gray-200 rounded" onclick="setTimeFrame('1M')">1M</button>
+                <button class="px-4 py-2 bg-gray-200 rounded" onclick="setTimeFrame('6M')">6M</button>
+                <button class="px-4 py-2 bg-gray-200 rounded" onclick="setTimeFrame('YTD')">YTD</button>
+                <button class="px-4 py-2 bg-gray-200 rounded" onclick="setTimeFrame('1Y')">1Y</button>
+                <button class="px-4 py-2 bg-gray-200 rounded" onclick="setTimeFrame('5Y')">5Y</button>
+                <button class="px-4 py-2 bg-gray-200 rounded" onclick="setTimeFrame('10Y')">10Y</button>
+            </div>
+
+            <!-- Chart Container -->
+            <!-- Chart Container -->
+<div class="bg-white p-6 shadow-lg rounded-lg relative">
+    <canvas id="stock-chart" width="800" height="400"></canvas>
+    <p id="no-data-message" class="text-gray-500 text-center absolute inset-0 flex justify-center items-center">
+        No stocks selected. Add a stock to compare.
+    </p>
+</div>
+
+<!-- Stock Data Table (Below the Chart) -->
+<div id="stock-table-container" class="hidden mt-8 bg-white p-6 shadow-lg rounded-lg w-full">
+    <h2 class="text-xl font-bold mb-4 text-center">Stock Comparison</h2>
+    <table class="w-full border-collapse border border-gray-300">
+        <thead>
+            <tr class="bg-gray-200 text-center">
+                <th class="border border-gray-300 px-4 py-2">Symbol</th>
+                <th class="border border-gray-300 px-4 py-2">Company Name</th>
+                <th class="border border-gray-300 px-4 py-2">Market Cap</th>
+                <th class="border border-gray-300 px-4 py-2">Stock Price</th>
+                <th class="border border-gray-300 px-4 py-2">% Change</th>
+                <th class="border border-gray-300 px-4 py-2">Volume</th>
+                <th class="border border-gray-300 px-4 py-2">PE Ratio</th>
+            </tr>
+        </thead>
+        <tbody id="stock-table-body"></tbody>
+    </table>
+</div>
+
+
+
+    </div>
+
+    <script>
+        let selectedStocks = [];
+        let stockChart;
+        let stockData = {};
+        let currentTimeframe = "1M";
+
+        // ✅ Extract stock symbol from URL (for redirection)
+        function getQueryParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // ✅ Search stock dynamically (show 5 suggestions)
+        async function searchStock(query) {
+            if (query.length < 1) {
+                document.getElementById("stock-suggestions").classList.add("hidden");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/search_stocks/?query=${query}`);
+                const data = await response.json();
+
+                if (!data.stocks || data.stocks.length === 0) {
+                    document.getElementById("stock-suggestions").classList.add("hidden");
+                    return;
+                }
+
+                showStockSuggestions(data.stocks);
+            } catch (error) {
+                console.error("Error fetching stock symbols:", error);
+            }
+        }
+
+        // ✅ Display stock suggestions
+        function showStockSuggestions(stocks) {
+            const suggestionBox = document.getElementById("stock-suggestions");
+            suggestionBox.innerHTML = "";
+
+            stocks.slice(0, 5).forEach(stock => {
+                const item = document.createElement("div");
+                item.className = "p-2 cursor-pointer hover:bg-gray-200";
+                item.innerText = `${stock.symbol} - ${stock.name}`;
+                item.onclick = () => {
+                    document.getElementById("stock-input").value = stock.symbol;
+                    suggestionBox.classList.add("hidden");
+                };
+                suggestionBox.appendChild(item);
+            });
+
+            suggestionBox.classList.remove("hidden");
+        }
+
+        // ✅ Add stock to comparison
+        function addStock() {
+            const stockInput = document.getElementById("stock-input").value.toUpperCase();
+            if (!stockInput || selectedStocks.includes(stockInput)) return;
+
+            selectedStocks.push(stockInput);
+            updateStockTags();
+            fetchStockData(stockInput);
+            document.getElementById("stock-input").value = "";
+            document.getElementById("stock-suggestions").classList.add("hidden");
+            updateStockTable();
+        }
+
+
+        // ✅ Update stock tags in the UI
+        function updateStockTags() {
+            const tagContainer = document.getElementById("stock-tags");
+            tagContainer.innerHTML = "";
+            selectedStocks.forEach(stock => {
+                const tag = document.createElement("span");
+                tag.className = "bg-blue-100 text-blue-600 px-3 py-1 rounded-lg flex items-center mr-2";
+                tag.innerHTML = `${stock} <button onclick="removeStock('${stock}')" class="ml-2 text-red-600">&times;</button>`;
+                tagContainer.appendChild(tag);
+            });
+        }
+
+        // ✅ Remove stock
+        function removeStock(stock) {
+            selectedStocks = selectedStocks.filter(s => s !== stock);
+            delete stockData[stock];
+            updateStockTags();
+            updateStockTable();
+            updateChart();
+        }
+
+        // ✅ Fetch stock data dynamically from API
+        // ✅ Fetch stock data dynamically from API
+function fetchStockData(symbol) {
+    console.log("Fetching data for:", symbol);
+    
+    fetch(`/get_stock_data/${symbol}/?timeframe=${currentTimeframe}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log("API Response:", data);
+
+            if (data.error) {
+                alert("Error fetching stock data: " + data.error);
+            } else {
+                stockData[symbol] = data;
+                updateChart();
+                updateStockTable(); // ✅ Update the table after fetching stock data
+            }
+        })
+        .catch(error => console.error("Fetch Error:", error));
+}
+
+// ✅ Update Stock Table (Show table when stocks are added)
+function updateStockTable() {
+    const tableContainer = document.getElementById("stock-table-container");
+    const tableBody = document.getElementById("stock-table-body");
+    tableBody.innerHTML = "";
+
+    if (selectedStocks.length === 0) {
+        tableContainer.classList.add("hidden"); // Hide table if no stocks
+        return;
+    }
+
+    selectedStocks.forEach(stock => {
+        const stockInfo = stockData[stock] || {}; // Ensure stock data exists
+
+        const row = `<tr>
+                    <td>${stock}</td>
+                    <td>${stockData[stock]?.company || "N/A"}</td>
+                    <td>${stockData[stock]?.market_cap || "N/A"}</td>
+                    <td>${stockData[stock]?.price || "N/A"}</td>
+                    <td>${stockData[stock]?.change || "N/A"}</td>
+                    <td>${stockData[stock]?.volume || "N/A"}</td>
+                    <td>${stockData[stock]?.pe_ratio || "N/A"}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+    });
+
+    tableContainer.classList.remove("hidden"); // ✅ Make the table visible
+}
+
+        
+
+        // ✅ Handle timeframe selection
+        function setTimeFrame(timeframe) {
+            currentTimeframe = timeframe;
+            selectedStocks.forEach(stock => fetchStockData(stock));
+        }
+
+        // ✅ Update chart with stock data
+        function updateChart() {
+            const ctx = document.getElementById("stock-chart").getContext("2d");
+
+            if (!stockChart) {
+                stockChart = new Chart(ctx, {
+                    type: "line",
+                    data: { labels: [], datasets: [] },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { x: { display: true }, y: { display: true } }
+                    }
+                });
+            }
+
+            stockChart.data.labels = stockData[selectedStocks[0]]?.dates || [];
+            stockChart.data.datasets = [];
+
+            let hasData = false;
+            for (const symbol in stockData) {
+                const dataset = {
+                    label: symbol,
+                    data: stockData[symbol].prices,
+                    borderColor: getRandomColor(),
+                    fill: false
+                };
+                stockChart.data.datasets.push(dataset);
+                hasData = true;
+            }
+
+            stockChart.update();
+            document.getElementById("no-data-message").style.display = hasData ? "none" : "block";
+        }
+
+        // ✅ Generate random colors for chart lines
+        function getRandomColor() {
+            const colors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A8", "#FFD700"];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // ✅ Auto-load stock symbol from URL
+        document.addEventListener("DOMContentLoaded", function () {
+            const symbol = getQueryParameter("symbol");
+            if (symbol) {
+                selectedStocks.push(symbol);
+                updateStockTags();
+                fetchStockData(symbol);
+            }
+        });
+
+
+    </script>
+    {% endblock %}
+</body>
+</html>

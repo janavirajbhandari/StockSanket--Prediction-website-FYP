@@ -1,0 +1,147 @@
+<!-- Tab Content Sections -->
+<div class="mt-6 p-4 bg-white shadow-lg rounded-lg">
+    <div class="grid grid-cols-12 gap-6 items-start">
+  
+      <!-- Stock Info -->
+      <div class="col-span-3 bg-white shadow-lg p-6 rounded-lg">
+        <h2 class="text-2xl font-semibold mb-6">Stock Information</h2>
+        <div class="space-y-4 text-sm">
+          <p><strong>Market Cap:</strong> {{ stock.market_cap|default:"N/A" }}</p>
+          <p><strong>Public Shares:</strong> {{ stock.public_shares|default:"N/A" }}</p>
+          <p><strong>52 Weeks High/Low:</strong> {{ stock.week_52|default:"N/A" }}</p>
+          <p><strong>Today's Volume:</strong> {{ stock.volume|default:"N/A" }}</p>
+          <p><strong>Today's Amount:</strong> {{ stock.todays_amount|default:"N/A" }}</p>
+          <p><strong>Trades:</strong> {{ stock.trades|default:"N/A" }}</p>
+          <p><strong>Open Price:</strong> {{ stock.open_price|default:"N/A" }}</p>
+          <p><strong>Close Price:</strong> {{ stock.close_price|default:"N/A" }}</p>
+          <p><strong>High/Low:</strong> {{ stock.high_low|default:"N/A" }}</p>
+          <p><strong>Previous Close:</strong> {{ stock.previous_close|default:"N/A" }}</p>
+          <p><strong>Currency:</strong> {{ stock.currency|default:"N/A" }}</p>
+        </div>
+      </div>
+  
+      <!-- Stock Chart -->
+      <div class="col-span-9">
+        <div class="flex justify-end mb-2 gap-2">
+          <button id="toggle-rsi" class="bg-blue-500 text-white text-xs px-3 py-1 rounded">RSI</button>
+          <button id="toggle-sma" class="bg-blue-500 text-white text-xs px-3 py-1 rounded">SMA</button>
+        </div>
+        <div id="chart-tooltip-container" class="mb-2 text-sm"></div>
+        <div id="candlestick-chart" style="height: 500px; width: 100%;"></div>
+        <script id="chart-data" type="application/json">
+          {{ historical_chart_data|safe }}
+        </script>
+  
+        <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+        <script>
+          function isValidNumber(val) {
+            return typeof val === 'number' && !isNaN(val) && isFinite(val) && val > 0;
+          }
+  
+          function isValidRow(row) {
+            return row && typeof row.time === 'number' &&
+              isValidNumber(row.open) &&
+              isValidNumber(row.high) &&
+              isValidNumber(row.low) &&
+              isValidNumber(row.close);
+          }
+  
+          function calculateRSI(data, period) {
+            let gains = 0, losses = 0;
+            const rsi = [];
+            for (let i = 1; i < data.length; i++) {
+              const change = data[i].close - data[i - 1].close;
+              gains += change > 0 ? change : 0;
+              losses += change < 0 ? Math.abs(change) : 0;
+              if (i >= period) {
+                const avgGain = gains / period;
+                const avgLoss = losses / period;
+                const rs = avgGain / (avgLoss || 1);
+                const rsiVal = 100 - (100 / (1 + rs));
+                rsi.push({ time: data[i].time, value: parseFloat(rsiVal.toFixed(2)) });
+                const prevChange = data[i - period + 1].close - data[i - period].close;
+                gains -= prevChange > 0 ? prevChange : 0;
+                losses -= prevChange < 0 ? Math.abs(prevChange) : 0;
+              }
+            }
+            return rsi;
+          }
+  
+          function calculateSMA(data, period) {
+            const sma = [];
+            for (let i = period - 1; i < data.length; i++) {
+              const sum = data.slice(i - period + 1, i + 1).reduce((acc, val) => acc + val.close, 0);
+              sma.push({ time: data[i].time, value: parseFloat((sum / period).toFixed(2)) });
+            }
+            return sma;
+          }
+  
+          document.addEventListener("DOMContentLoaded", () => {
+            const chartEl = document.getElementById("candlestick-chart");
+            const scriptTag = document.getElementById("chart-data");
+            const tooltip = document.getElementById("chart-tooltip-container");
+  
+            let rawData = JSON.parse(scriptTag.textContent.trim());
+            const cleanData = rawData.filter(isValidRow);
+  
+            const chart = LightweightCharts.createChart(chartEl, {
+              width: chartEl.clientWidth,
+              height: 500,
+              layout: { background: { color: "#fff" }, textColor: "#000" },
+              grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
+              timeScale: { timeVisible: true, borderColor: "#ccc" },
+              priceScale: { borderColor: "#ccc" },
+              handleScroll: { mouseWheel: true, pressedMouseMove: true },
+              handleScale: { mouseWheel: true, pinch: true },
+            });
+  
+            const candleSeries = chart.addCandlestickSeries();
+            candleSeries.setData(cleanData);
+  
+            const volumeSeries = chart.addHistogramSeries({
+              color: '#26a69a',
+              priceFormat: { type: 'volume' },
+              priceScaleId: '',
+              scaleMargins: { top: 0.8, bottom: 0 },
+            });
+            volumeSeries.setData(cleanData.map(d => ({ time: d.time, value: d.volume || 0, color: d.close > d.open ? '#26a69a' : '#ef5350' })));
+  
+            const rsiSeries = chart.addLineSeries({ color: '#FFA500', lineWidth: 1, title: 'RSI', visible: false });
+            const rsiData = calculateRSI(cleanData, 14);
+            rsiSeries.setData(rsiData);
+  
+            const smaSeries = chart.addLineSeries({ color: '#1E90FF', lineWidth: 1, title: 'SMA', visible: false });
+            const smaData = calculateSMA(cleanData, 14);
+            smaSeries.setData(smaData);
+  
+            document.getElementById("toggle-rsi").addEventListener("click", () => {
+              const visible = rsiSeries.options().visible;
+              rsiSeries.applyOptions({ visible: !visible });
+            });
+  
+            document.getElementById("toggle-sma").addEventListener("click", () => {
+              const visible = smaSeries.options().visible;
+              smaSeries.applyOptions({ visible: !visible });
+            });
+  
+            chart.subscribeCrosshairMove(param => {
+              const d = param.seriesData.get(candleSeries);
+              if (d) {
+                tooltip.innerHTML = `<div class="bg-white border p-2 rounded shadow inline-block">🕯️ <strong>OHLC</strong> | Open: ${d.open}, High: ${d.high}, Low: ${d.low}, Close: ${d.close}</div>`;
+              } else {
+                tooltip.innerHTML = "";
+              }
+            });
+  
+            chart.timeScale().fitContent();
+  
+            window.addEventListener("resize", () => {
+              chart.resize(chartEl.clientWidth, 500);
+            });
+          });
+        </script>
+      </div>
+  
+    </div>
+  </div>
+  

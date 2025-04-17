@@ -1,0 +1,22 @@
+
+<!-- news_detail.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+
+  <div class="flex">
+      {% include 'sidebar.html' %}
+
+<div class="p-10 ml-40 mt-11 w-full">
+  <h1 class="text-3xl font-bold text-[#001F7B] mb-4">{{ article.title }}</h1>
+  {% if image_url %}
+   <br> <img src="{{ image_url }}" alt="News Image" class="mb-4 rounded shadow" /> <br>
+  {% endif %}
+  <br>
+  <p class="text-sm text-gray-500 mb-2">{{ article.date }}</p><br>
+  <div class="text-gray-800 leading-relaxed">
+    {{ article.content|safe }}
+  </div>
+  
+</div>
+{% endblock %}

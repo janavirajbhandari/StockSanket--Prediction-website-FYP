@@ -1,0 +1,184 @@
+{% load static %}
+
+<!-- Top Navbar (White Background) -->
+<nav class="h-16 w-full bg-white border-b shadow-sm flex items-center px-6 justify-between fixed top-0 left-0 right-0 z-50">
+    <!-- Left Side: Logo -->
+    <div class="flex items-center space-x-3">
+        <img src="{% static 'logo.png' %}" class="h-14 w-70" alt="Logo">
+    </div>
+
+    <!-- Middle: Search Bar -->
+    <div class="w-1/3 flex items-center bg-gray-100 px-3 py-2 rounded-lg shadow-sm">
+        <span class="material-icons text-gray-500">search</span>
+        <input type="text" placeholder="Search by Symbol or Company Name" 
+               class="w-full outline-none bg-transparent ml-2 text-sm">
+        <span class="material-icons text-gray-500">arrow_drop_down</span>
+    </div>
+
+    <!-- Right Side: Login & Contact -->
+    <div class="flex items-center space-x-4 relative">
+        {% if user.is_authenticated %}
+            <!-- Notification Icon -->
+            <!-- Notification Icon with Badge -->
+        <div class="relative">
+            <button onclick="toggleNotifications()" class="relative">
+            <span class="material-icons text-gray-700">notifications</span>
+            <span id="notif-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1">0</span>
+            </button>
+        
+            <!-- Notification Dropdown -->
+            <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border border-gray-200 z-50">
+            <div class="px-4 py-2 font-semibold text-gray-800 border-b">Notifications</div>
+            <ul id="notification-list" class="max-h-60 overflow-y-auto divide-y divide-gray-200">
+                <!-- Notifications will be inserted here -->
+            </ul>
+            </div>
+        </div>
+  
+
+            <!-- User Avatar with Dropdown on Click -->
+            <div class="relative">
+                <button onclick="toggleUserMenu()" class="flex items-center focus:outline-none">
+                    <span class="material-icons text-gray-700">account_circle</span>
+                </button>
+                <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <div class="px-4 py-2 text-gray-800 font-semibold border-b">{{ user.username }}</div>
+                    <form method="POST" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100 hover:text-red-800">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <!-- Login Button -->8
+            <a href="{% url 'login' %}" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                Log In
+            </a>
+        {% endif %}
+
+        <!-- Phone Icon & Number -->
+        <span class="material-icons text-blue-600">call</span>
+        <span class="ml-1 font-medium">981-511-1199</span>
+    </div>
+</nav>
+
+<!-- Sidebar (Fixed) -->
+<aside class="h-full min-h-screen w-29 border-r shadow-sm bg-[#E7E9F2] fixed top-16 left-0 flex flex-col overflow-y-auto z-50">
+    <nav class="flex-1 px-4 mt-3">
+        <ul>
+            <li class="relative flex items-center py-3 px-4 my-1 font-medium rounded-md cursor-pointer transition hover:bg-gray-300 pl-3">
+                <a href="{% url 'home' %}" class="flex items-center w-full">
+                    <span class="material-icons">home</span>
+                    <span class="ml-3">Home</span>
+                </a>
+            </li>
+            <li class="relative flex items-center py-3 px-4 my-1 font-medium rounded-md cursor-pointer transition hover:bg-gray-300 pl-3">
+                <a href="{% url 'stocks' %}" class="flex items-center w-full">
+                    <span class="material-icons">equalizer</span>
+                    <span class="ml-3">Stocks</span>
+                    <span class="material-icons ml-auto">arrow_drop_down</span>
+                </a>
+            </li>
+            <li class="relative flex items-center py-3 px-4 my-1 font-medium rounded-md cursor-pointer transition hover:bg-gray-300 pl-3">
+                <a href="{% url 'news' %}" class="flex items-center w-full">
+                    <span class="material-icons">article</span>
+                    <span class="ml-3">News</span>
+                </a>
+            </li>
+            <li class="relative flex items-center py-3 px-4 my-1 font-medium rounded-md cursor-pointer transition hover:bg-gray-300 pl-3">
+                <a href="{% url 'articles' %}" class="flex items-center w-full">
+                    <span class="material-icons">library_books</span>
+                    <span class="ml-3">Articles</span>
+                </a>
+            </li>
+            <li class="relative flex items-center py-3 px-4 my-1 font-medium rounded-md cursor-pointer transition hover:bg-gray-300 pl-3">
+                <a href="{% url 'watchlists' %}" class="flex items-center w-full">
+                    <span class="material-icons">star</span>
+                    <span class="ml-3">Watchlists</span>
+                </a>
+            </li>
+        </ul>
+
+        {% if user.is_authenticated %}
+        <div class="border-t flex p-4 mt-72 hover:bg-red-200 hover:text-red-900">
+            <form method="POST" action="{% url 'logout' %}" class="w-full">
+                {% csrf_token %}
+                <button type="submit" class="flex items-center w-full">
+                    <span class="material-icons">logout</span>
+                    <span class="ml-3">Logout</span>
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </nav>
+</aside>
+
+<script>
+    function toggleUserMenu() {
+        const menu = document.getElementById("user-menu");
+        menu.classList.toggle("hidden");
+    }
+
+    document.addEventListener("click", function (event) {
+        const menu = document.getElementById("user-menu");
+        const button = document.querySelector('[onclick="toggleUserMenu()"]');
+
+        if (!menu.contains(event.target) && !button.contains(event.target)) {
+            menu.classList.add("hidden");
+        }
+    });
+
+
+    let notifications = [
+    { id: 1, message: "AAPL added to Watchlist", type: "success", read: false },
+    { id: 2, message: "Failed to fetch TSLA", type: "error", read: false },
+    { id: 3, message: "GOOGL price updated", type: "info", read: false },
+];
+
+function toggleNotifications() {
+    const dropdown = document.getElementById("notification-dropdown");
+    dropdown.classList.toggle("hidden");
+}
+
+function renderNotifications() {
+    const list = document.getElementById("notification-list");
+    const count = document.getElementById("notif-count");
+    list.innerHTML = ""; // Clear old items
+
+    let unreadCount = 0;
+
+    notifications.forEach((notif) => {
+        if (!notif.read) unreadCount++;
+
+        const li = document.createElement("li");
+        li.className = "px-4 py-3 flex justify-between items-center text-sm";
+        li.innerHTML = `
+            <span class="${notif.type === 'error' ? 'text-red-600' : notif.type === 'success' ? 'text-green-600' : 'text-gray-700'}">${notif.message}</span>
+            <button onclick="markAsRead(${notif.id})" class="text-xs text-blue-500 hover:underline">Close</button>
+        `;
+        list.appendChild(li);
+    });
+
+    count.innerText = unreadCount;
+    count.classList.toggle("hidden", unreadCount === 0);
+}
+
+function markAsRead(id) {
+    notifications = notifications.map(n => n.id === id ? { ...n, read: true } : n);
+    renderNotifications();
+}
+
+document.addEventListener("DOMContentLoaded", renderNotifications);
+
+// Optional: Close dropdown when clicking outside
+document.addEventListener("click", function (e) {
+    const dropdown = document.getElementById("notification-dropdown");
+    const button = document.querySelector('button[onclick="toggleNotifications()"]');
+
+    if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+        dropdown.classList.add("hidden");
+    }
+});
+</script>

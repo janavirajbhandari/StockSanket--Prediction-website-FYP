@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market News</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50"> <!-- Light background for full page -->
+    {% extends 'base.html' %}
+
+    {% block content %}
+    <div class="flex">
+        {% include 'sidebar.html' %}
+            <div class="p-10 ml-40 mt-11 w-full"> 
+            <h1 class="text-[#001F7B] text-3xl font-bold mb-7">Stock Market News</h1>
+
+            <div class="grid grid-cols-12 gap-8">
+                <!-- News Section -->
+                <div class="col-span-9 space-y-6">
+                    {% for article in news %}
+                    <a href="{% url 'news_detail' article.csv_index %}" class="block">
+                    <div class="flex space-x-6 pb-6 border-b border-gray-300">  <!-- Border added for faded effect -->
+                        {% if article.image %}
+                        <img src="{{ article.image }}" alt="News Image" class="w-48 h-32 object-cover">
+                        {% else %}
+                        <img src="https://via.placeholder.com/150" alt="Placeholder Image" class="w-48 h-32 object-cover rounded-md">
+                        {% endif %}
+                        
+                        <div>
+                            <p class="text-gray-500 text-sm mt-2">
+                                Published: {{ article.date }}
+
+                            </p>
+                            <br>
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <a href="{% url 'news_detail' article.csv_index %}" class="text-blue-900 hover:text-blue-600 transition-colors">
+                    
+                                    {{ article.title }}
+                                </a>
+                                                            
+                            </h2>
+                           
+                            <p class="text-gray-700 text-sm mt-2">
+                                {{ article.summary|truncatewords:25 }}
+                            </p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500">No stock news available.</p>
+
+                    </a>
+                    {% endfor %}
+                </div>
+
+                <!-- Sidebar with Trending News -->
+                <div class="col-span-3 bg-gray-100 p-6 rounded-md shadow-sm">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Trending News</h2>
+                    <ul class="space-y-3">
+                        {% for article in trending %}
+                        <li class="border-b border-gray-300 pb-2">
+                            <a href="{% url 'news_detail' article.csv_index %}" class="text-blue-600 hover:underline text-sm">
+                                {{ article.title }}
+                            </a>
+                        </li>
+                        {% empty %}
+                        <li class="text-gray-500">No news available.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-6 text-center space-x-4">
+        {% if news.has_previous %}
+            <a href="?page={{ news.previous_page_number }}" class="inline-block px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
+                ← Previous
+            </a>
+        {% endif %}
+    
+        <span class="inline-block px-4 py-2 text-sm text-gray-700">
+            Page {{ news.number }} of {{ news.paginator.num_pages }}
+        </span>
+    
+        {% if news.has_next %}
+            <a href="?page={{ news.next_page_number }}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Next →
+            </a>
+        {% endif %}
+    </div>
+    
+      
+    {% endblock %}
+</body>
+</html>

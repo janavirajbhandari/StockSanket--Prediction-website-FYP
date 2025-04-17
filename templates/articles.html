@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis Blog</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+    {% extends 'base.html' %}
+
+    {% block content %}
+    <div class="flex">
+        {% include 'sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="p-10 ml-40 mt-11 w-full"> 
+            <h1 class="text-[#001F7B] text-3xl font-bold mb-2">Stock Analysis Blog</h1>
+            <p class="text-gray-600 mb-6">Latest articles on stocks, finance, and investing.</p>
+
+            <!-- Grid Layout for Blog Articles -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for article in articles %}
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden w-full">
+                    <!-- Image that covers the full width of the box -->
+                    <a href="{{ article.link }}" target="_blank">
+                        {% if article.image %}
+                        <img src="{{ article.image }}" alt="Article Image" class="w-full h-56 object-cover">
+                        {% else %}
+                        <img src="https://via.placeholder.com/300" alt="Placeholder Image" class="w-full h-56 object-cover">
+                        {% endif %}
+                    </a>
+
+                    <!-- Image Source Text -->
+                    <p class="text-gray-500 text-xs text-center mt-1">Yahoo Finance</p>
+
+                    <div class="p-4">
+                        <h2 class="text-lg font-semibold text-black">
+                            <a href="{{ article.link }}" target="_blank" class="hover:text-blue-600 transition">
+                                {{ article.title }}
+                            </a>
+                        </h2>
+                        <p class="text-gray-600 text-sm mt-2">{{ article.summary|truncatewords:20 }}</p>
+
+                        <!-- Author & Date -->
+                        <p class="text-gray-500 text-xs mt-4 font-medium">
+                            {{ article.author }} <br>
+                            <span class="text-gray-400">{{ article.published_date }}</span>
+                        </p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500">No blog articles available.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+
+</body>
+</html>

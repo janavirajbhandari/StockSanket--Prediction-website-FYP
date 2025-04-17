@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stocks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+    {% extends 'base.html' %}
+    {% block content %}
+    <div class="flex">
+        {% include 'sidebar.html' %}
+    
+        <main class="flex-1 p-6 lg:ml-[180px] mt-16">
+    4
+            <!-- Title Section -->
+            <div>
+                <h1 class="text-[#001F7B] text-3xl font-bold">All Stock Symbols</h1>
+                <hr class="mt-2 border-t-2 border-gray-300">
+            </div>
+    
+            <!-- Search Bar & Stock Count -->
+            <div class="flex justify-between items-center mt-6 mb-4">
+                <h2 class="text-lg font-semibold">{{ stocks.paginator.count }} Stocks</h2>
+                <div class="relative">
+                    <input type="text" placeholder="Find...." 
+                        class="w-64 pl-4 pr-10 py-2 border rounded-lg focus:ring focus:ring-blue-200 outline-none">
+                    <span class="absolute right-3 top-2 text-gray-500 material-icons">search</span>
+                </div>
+            </div>
+    
+            <!-- Stocks Table -->
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <table class="w-full table-auto border-collapse">
+                    <thead class="bg-gray-200">
+                        <tr class="text-left">
+                            <th class="px-4 py-3">Symbol</th>
+                            <th class="px-4 py-3">Market Cap</th>
+                            <th class="px-4 py-3">Industry</th>
+                            <th class="px-4 py-3">Company</th>
+                            <th class="px-4 py-3">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in stocks %}
+                        <tr class="border-b hover:bg-gray-100">
+                            <td class="px-4 py-3 text-blue-600 font-medium">
+                                <a href="{% url 'stock_loading' stock.symbol %}">{{ stock.symbol }}</a>
+                                
+                            </td>
+                            <td class="px-4 py-3">{{ stock.market_cap }}</td>
+                            <td class="px-4 py-3">{{ stock.industry }}</td>
+                            <td class="px-4 py-3">{{ stock.company }}</td>
+                            <td class="px-4 py-3">{{ stock.revenue }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-gray-500">No data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+    
+            <!-- Pagination Controls -->
+            <div class="flex justify-between items-center mt-6 px-4">
+                <a href="?page=1" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">First</a>
+    
+                {% if stocks.has_previous %}
+                    <a href="?page={{ stocks.previous_page_number }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">Previous</a>
+                {% else %}
+                    <span class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg">Previous</span>
+                {% endif %}
+    
+                <span class="text-gray-700">Page {{ stocks.number }} of {{ stocks.paginator.num_pages }}</span>
+    
+                {% if stocks.has_next %}
+                    <a href="?page={{ stocks.next_page_number }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">Next</a>
+                {% else %}
+                    <span class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg">Next</span>
+                {% endif %}
+    
+                <a href="?page={{ stocks.paginator.num_pages }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">Last</a>
+            </div>
+    
+        </main>
+    </div>
+    {% endblock %}
+    
+</body>
+</html>

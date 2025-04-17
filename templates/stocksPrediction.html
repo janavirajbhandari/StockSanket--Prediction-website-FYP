@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-3 bg-white p-6 mx-auto ml-[210px] w-[1290px] shadow-lg rounded-lg">
+            {% if user.is_authenticated %}
+            <!-- Show actual prediction content -->
+            <div class="grid grid-cols-12 gap-6 items-start">
+                <!-- Stock Info (Left) -->
+                <div class="col-span-3 bg-white shadow-lg p-6 rounded-lg">
+                    <h2 class="text-2xl font-semibold mb-6">Stock Information</h2>
+                    <div class="space-y-4 text-sm">
+                        <p><strong>Market Cap:</strong> {{ stock.market_cap|default:"N/A" }}</p>
+                        <p><strong>Currency:</strong> {{ stock.currency|default:"N/A" }}</p>
+                    </div>
+                </div>
+
+                <!-- Chart (Right) -->
+                <div class="col-span-9 bg-gray-100 p-6 rounded-lg shadow-lg relative overflow-hidden">
+                    <h2 class="text-lg font-semibold text-gray-800">Stock Prediction for {{ stock.symbol }}</h2>
+                    <div id="chart-container">
+                        <canvas id="predictionChart"></canvas>
+                    </div>
+                    <p id="error-message" class="text-red-500 mt-3"></p>
+                </div>
+            </div>
+            {% else %}
+            <!-- Locked View: Blur only prediction section -->
+            <div class="relative bg-gray-100 p-6 rounded-lg shadow-lg mt-6">
+                
+                <!-- The actual blurred content (canvas etc.) -->
+                <div class="opacity-1000 pointer-events-none blur-sm select-none">
+                    <h2 class="text-lg font-semibold text-gray-300">Stock Prediction (Locked)</h2>
+                    <div id="chart-container">
+                        <canvas id="predictionChart"></canvas>
+                    </div>
+                </div>
+            
+                <!-- Overlay login prompt -->
+                <div class="absolute inset-0 z-10 flex flex-col justify-center items-center text-center">
+                    <span class="material-icons text-gray-700 text-6xl mb-2">lock</span>
+                    <p class="text-gray-700 text-lg font-semibold">You must log in to access this feature.</p>
+                    <a href="{% url 'login' %}" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Log In
+                    </a>
+                </div>
+            
+            </div>
+            {% endif %}
+            
+
+        </div>
+        {% if prediction_data %}
+
+<!-- Place script at the end to avoid undefined function error -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function fetchPrediction(symbol) {
+        if (!symbol || symbol.trim() === "") {
+            document.getElementById("error-message").innerText = "Error: Stock symbol is missing.";
+            return;
+        }
+
+        fetch(`/predict/${symbol}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("error-message").innerText = data.error;
+                    return;
+                }
+
+                const df_combined = JSON.parse(data.df_combined);
+                const dates = Object.keys(df_combined.closing_price);
+                const prices = Object.values(df_combined.closing_price);
+                const types = Object.values(df_combined.type);
+
+                let historicalPrices = [], predictedPrices = [];
+                types.forEach((type, i) => {
+                    if (type === "Historical") {
+                        historicalPrices.push(prices[i]);
+                        predictedPrices.push(null);
+                    } else {
+                        historicalPrices.push(null);
+                        predictedPrices.push(prices[i]);
+                    }
+                });
+
+                const chartCanvas = document.getElementById("predictionChart");
+                if (!chartCanvas) {
+                    console.error("Error: Chart canvas not found.");
+                    return;
+                }
+
+                const ctx = chartCanvas.getContext("2d");
+                new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: dates,
+                        datasets: [
+                            {
+                                label: "Historical Prices",
+                                data: historicalPrices,
+                                borderColor: "green",
+                                fill: false,
+                                spanGaps: true
+                            },
+                            {
+                                label: "Predicted Prices",
+                                data: predictedPrices,
+                                borderColor: "orange",
+                                fill: false,
+                                spanGaps: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Historical & Predicted Prices'
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                document.getElementById("error-message").innerText = `Error fetching prediction data: ${error.message}`;
+                console.error("Error fetching prediction:", error);
+            });
+    }
+
+    fetchPrediction("{{ stock.symbol }}");
+});
+</script>
+{% endif %}
+{% endblock %}

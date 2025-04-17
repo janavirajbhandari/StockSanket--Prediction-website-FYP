@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fixed Chart</title>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+  <div id="chart" style="width: 800px; height: 400px;"></div>
+  <script>
+    const chart = LightweightCharts.createChart(document.getElementById("chart"), {
+      width: 800,
+      height: 400,
+    });
+
+    const candleSeries = chart.addCandlestickSeries();
+
+    const fixedData = [
+      { time: '2023-04-10', open: 181, high: 199, low: 181, close: 199 },
+      { time: '2023-04-11', open: 171, high: 186, low: 171, close: 184 },
+      { time: '2023-04-12', open: 172, high: 173, low: 172, close: 172 },
+      { time: '2023-04-13', open: 174, high: 176, low: 170, close: 175 },
+      { time: '2023-04-14', open: 174, high: 174, low: 171, close: 171 },
+    ];
+
+    candleSeries.setData(fixedData);
+  </script>
+</body>
+</html>

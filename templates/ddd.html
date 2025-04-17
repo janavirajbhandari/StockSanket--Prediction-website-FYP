@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Lightweight Chart</title>
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+  <div id="candlestick-chart" style="height: 500px; width: 100%; background: white;"></div>
+
+  <script>
+    const testData = [
+      { time: 1557792000, open: 181, high: 199, low: 181, close: 199 },
+      { time: 1557705600, open: 171, high: 186, low: 171, close: 184 },
+      { time: 1557619200, open: 172, high: 173, low: 172, close: 172 },
+      { time: 1557532800, open: 174, high: 176, low: 170, close: 175 },
+      { time: 1557273600, open: 174, high: 174, low: 171, close: 171 },
+    ];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(() => {
+        const chartEl = document.getElementById("candlestick-chart");
+
+        if (!chartEl) {
+          console.error("❌ Chart container not found");
+          return;
+        }
+
+        const rect = chartEl.getBoundingClientRect();
+        const width = Math.max(400, Math.floor(rect.width));
+        const height = Math.max(300, Math.floor(rect.height));
+        console.log("📐 Container size:", width, height);
+
+        const chart = LightweightCharts.createChart(chartEl, {
+          width: width,
+          height: height,
+          layout: {
+            background: { color: "#fff" },
+            textColor: "#000"
+          },
+          grid: {
+            vertLines: { color: "#eee" },
+            horzLines: { color: "#eee" }
+          },
+          timeScale: {
+            timeVisible: true,
+            secondsVisible: false
+          }
+        });
+
+        const candleSeries = chart.addCandlestickSeries();
+
+        const validData = testData.filter(d =>
+          d &&
+          typeof d.time === "number" &&
+          typeof d.open === "number" &&
+          typeof d.high === "number" &&
+          typeof d.low === "number" &&
+          typeof d.close === "number"
+        );
+
+        console.log("📊 Valid candlestick data:", validData);
+
+        try {
+          candleSeries.setData(validData);
+          chart.timeScale().fitContent();
+          console.log("✅ Chart rendered!");
+        } catch (e) {
+          console.error("❌ Failed to set chart data:", e);
+        }
+      }, 500);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Ignore virtual environments
+venv/
+venv311/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+*.env
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Database and local CSVs
+db.sqlite3
+*.csv
+
+# Predictions and output folders
+stock_prediction/
+stock_history/
+sentiment_data/
+predictions/
+
+# VS Code / PyCharm configs (optional)
+.vscode/
+.idea/
