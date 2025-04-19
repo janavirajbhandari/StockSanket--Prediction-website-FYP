@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-&a8^tx*rsjy%rgd2!k8*1+t9wwo3jf@2u_ik1h+fh@ynkf9__0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['stocksanket-prediction-website-fyp-1.onrender.com']
+ALLOWED_HOSTS = ['stocksanket-prediction-website-fyp-1.onrender.com', 'localhost', '127.0.0.1']
 
 
 
