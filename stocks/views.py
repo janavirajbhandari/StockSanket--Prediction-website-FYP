@@ -462,6 +462,7 @@ import os
 import json
 
 def get_prediction_chart_data(symbol):
+    import tensorflow as tf
     file_path = os.path.join(BASE_DIR, "predictions", symbol.upper(), f"{symbol.upper()}.json")
 
     print("📁 Trying to load prediction JSON from:", file_path)
@@ -521,6 +522,7 @@ from django.utils.safestring import mark_safe
 
 
 def StockDetail(request, symbol):
+    import tensorflow as tf
     try:
         stock_data = Stock.objects.filter(symbol=symbol.upper()).first()
         if not stock_data or not stock_data.company_id:
