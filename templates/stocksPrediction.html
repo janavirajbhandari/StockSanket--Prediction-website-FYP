@@ -1,142 +1,242 @@
-{% extends 'base.html' %}
-
-{% block content %}
+<!-- stocksPrediction.html -->
 <div class="p-3 bg-white p-6 mx-auto ml-[210px] w-[1290px] shadow-lg rounded-lg">
-            {% if user.is_authenticated %}
-            <!-- Show actual prediction content -->
-            <div class="grid grid-cols-12 gap-6 items-start">
-                <!-- Stock Info (Left) -->
-                <div class="col-span-3 bg-white shadow-lg p-6 rounded-lg">
-                    <h2 class="text-2xl font-semibold mb-6">Stock Information</h2>
-                    <div class="space-y-4 text-sm">
-                        <p><strong>Market Cap:</strong> {{ stock.market_cap|default:"N/A" }}</p>
-                        <p><strong>Currency:</strong> {{ stock.currency|default:"N/A" }}</p>
-                    </div>
-                </div>
+  <div class="grid grid-cols-12 gap-8 items-start">
 
-                <!-- Chart (Right) -->
-                <div class="col-span-9 bg-gray-100 p-6 rounded-lg shadow-lg relative overflow-hidden">
-                    <h2 class="text-lg font-semibold text-gray-800">Stock Prediction for {{ stock.symbol }}</h2>
-                    <div id="chart-container">
-                        <canvas id="predictionChart"></canvas>
-                    </div>
-                    <p id="error-message" class="text-red-500 mt-3"></p>
-                </div>
-            </div>
-            {% else %}
-            <!-- Locked View: Blur only prediction section -->
-            <div class="relative bg-gray-100 p-6 rounded-lg shadow-lg mt-6">
-                
-                <!-- The actual blurred content (canvas etc.) -->
-                <div class="opacity-1000 pointer-events-none blur-sm select-none">
-                    <h2 class="text-lg font-semibold text-gray-300">Stock Prediction (Locked)</h2>
-                    <div id="chart-container">
-                        <canvas id="predictionChart"></canvas>
-                    </div>
-                </div>
-            
-                <!-- Overlay login prompt -->
-                <div class="absolute inset-0 z-10 flex flex-col justify-center items-center text-center">
-                    <span class="material-icons text-gray-700 text-6xl mb-2">lock</span>
-                    <p class="text-gray-700 text-lg font-semibold">You must log in to access this feature.</p>
-                    <a href="{% url 'login' %}" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-                        Log In
-                    </a>
-                </div>
-            
-            </div>
-            {% endif %}
-            
-
+    <!-- Stock Info -->
+    <div class="col-span-3 bg-white shadow-lg p-6 rounded-lg">
+      <!-- Predicted Data Table -->
+        <div class="mt-1">
+          <h3 class="text-l font-semibold mb-4">7 Days Predicted Close Prices</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full table-auto border-collapse border border-gray-300">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-6 py-3 border border-gray-300 text-left text-sm font-medium text-gray-700">Date</th>
+                  <th class="px-6 py-3 border border-gray-300 text-left text-sm font-medium text-gray-700">Close</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white">
+                {% for row in predicted_data %}
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 border border-gray-300 text-sm text-gray-900">{{ row.date }}</td>
+                  <td class="px-6 py-4 border border-gray-300 text-sm text-gray-900">{{ row.close }}</td>
+                </tr>
+                {% endfor %}
+                {% if predicted_data|length == 0 %}
+                <tr>
+                  <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">No predicted data available.</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
         </div>
-        {% if prediction_data %}
 
-<!-- Place script at the end to avoid undefined function error -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    function fetchPrediction(symbol) {
-        if (!symbol || symbol.trim() === "") {
-            document.getElementById("error-message").innerText = "Error: Stock symbol is missing.";
-            return;
-        }
+    </div>
 
-        fetch(`/predict/${symbol}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    document.getElementById("error-message").innerText = data.error;
-                    return;
-                }
+    <!-- Prediction Chart -->
+    <div class="col-span-9">
+      <div id="chart-tooltip-container" class="mb-2 text-sm"></div>
+      <div id="prediction-candlestick-chart" class="w-full h-[500px]" style="min-width: 800px;"></div>
+    
+    </div>
+    </div>
+    </div>
 
-                const df_combined = JSON.parse(data.df_combined);
-                const dates = Object.keys(df_combined.closing_price);
-                const prices = Object.values(df_combined.closing_price);
-                const types = Object.values(df_combined.type);
+      <!-- Line Graph Section -->
+    <div class="p-3 p-6 mx-auto mt-6 ml-[210px] w-[1290px]">
+      <h3 class="text-xl font-semibold mb-4">Line Graph – Closing Price Forecast</h3>
+      <div class="bg-white p-6 rounded-lg shadow-lg mt-4">
+        <canvas id="line-forecast-chart" class="w-full h-[400px]"></canvas>
+      </div>
+    </div>  
 
-                let historicalPrices = [], predictedPrices = [];
-                types.forEach((type, i) => {
-                    if (type === "Historical") {
-                        historicalPrices.push(prices[i]);
-                        predictedPrices.push(null);
-                    } else {
-                        historicalPrices.push(null);
-                        predictedPrices.push(prices[i]);
-                    }
-                });
+      <!-- Accuracy Comparison Section -->
+        <div class="p-3 mx-auto mt-6 ml-[210px] w-[1290px]">
+          <h3 class="text-xl font-semibold mb-4">Prediction vs Actual – Last 10 Days</h3>
+          <div class="grid grid-cols-2 gap-6">
+            
+            <!-- Left: Candlestick Chart -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+              <h4 class="text-md font-semibold mb-2">Candlestick Accuracy</h4>
+              <div id="accuracy-candlestick-chart" class="w-full h-[400px]"></div>
+            </div>
 
-                const chartCanvas = document.getElementById("predictionChart");
-                if (!chartCanvas) {
-                    console.error("Error: Chart canvas not found.");
-                    return;
-                }
+            <!-- Right: Line Graph -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+              <h4 class="text-md font-semibold mb-2">Line Graph Accuracy</h4>
+              <canvas id="accuracy-line-chart" class="w-full h-[400px]"></canvas>
+            </div>
 
-                const ctx = chartCanvas.getContext("2d");
-                new Chart(ctx, {
-                    type: "line",
-                    data: {
-                        labels: dates,
-                        datasets: [
-                            {
-                                label: "Historical Prices",
-                                data: historicalPrices,
-                                borderColor: "green",
-                                fill: false,
-                                spanGaps: true
-                            },
-                            {
-                                label: "Predicted Prices",
-                                data: predictedPrices,
-                                borderColor: "orange",
-                                fill: false,
-                                spanGaps: true
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Historical & Predicted Prices'
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => {
-                document.getElementById("error-message").innerText = `Error fetching prediction data: ${error.message}`;
-                console.error("Error fetching prediction:", error);
+          </div>
+        </div>
+
+      <!-- Chart Data -->
+      <script id="prediction-chart-data" type="application/json">
+        {{ prediction_chart_data|safe }}
+      </script>
+
+      <!-- Chart Script -->
+      <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.predictionChartInitialized) {
+                console.log("🟠 Chart already initialized. Skipping re-render.");
+                return;
+            }
+            window.predictionChartInitialized = true;
+        
+            const chartEl = document.getElementById("prediction-candlestick-chart");
+            const scriptTag = document.getElementById("prediction-chart-data");
+            const tooltip = document.getElementById("chart-tooltip-container");
+        
+            if (!chartEl || !scriptTag) {
+                console.error("❌ Chart or Data Script not found.");
+                return;
+            }
+        
+            // Optional: Clear any leftover chart content
+            chartEl.innerHTML = "";
+        
+            let rawData = [];
+            try {
+                rawData = JSON.parse(scriptTag.textContent.trim());
+                console.log("✅ Parsed prediction chart data length:", rawData.length);
+            } catch (e) {
+                console.error("❌ Error parsing prediction JSON:", e);
+                return;
+            }
+        
+            const pastCandles = rawData.filter(d => !d.predicted);
+            const predictedCandles = rawData.filter(d => d.predicted);
+        
+            if (!pastCandles.length && !predictedCandles.length) {
+                console.warn("⚠️ No data found.");
+                return;
+            }
+        
+            const chart = LightweightCharts.createChart(chartEl, {
+                width: chartEl.offsetWidth || 800,  // fallback to 800px
+                height: 500,
+                layout: { background: { color: "#fff" }, textColor: "#000" },
+                grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
+                timeScale: { timeVisible: true, borderColor: "#ccc" },
+                priceScale: { borderColor: "#ccc" },
+                handleScroll: { mouseWheel: true, pressedMouseMove: true },
+                handleScale: { mouseWheel: true, pinch: true },
             });
-    }
 
-    fetchPrediction("{{ stock.symbol }}");
-});
-</script>
-{% endif %}
-{% endblock %}
+        
+            const pastSeries = chart.addCandlestickSeries({
+                upColor: "#26a69a", downColor: "#ef5350",
+                borderVisible: false,
+                wickUpColor: "#26a69a", wickDownColor: "#ef5350"
+            });
+        
+            const predictionSeries = chart.addCandlestickSeries({
+                upColor: "orange", downColor: "orange",
+                borderVisible: false,
+                wickUpColor: "orange", wickDownColor: "orange"
+            });
+        
+            pastSeries.setData(pastCandles);
+            predictionSeries.setData(predictedCandles);
+        
+            chart.subscribeCrosshairMove(param => {
+                const past = param.seriesData.get(pastSeries);
+                const predicted = param.seriesData.get(predictionSeries);
+                const d = past || predicted;
+        
+                tooltip.innerHTML = d
+                    ? `<div class="bg-white border p-2 rounded shadow inline-block">
+                        🕯️ <strong>OHLC</strong> | 
+                        Open: ${d.open}, High: ${d.high}, Low: ${d.low}, Close: ${d.close}
+                      </div>`
+                    : "";
+            });
+        
+            chart.timeScale().scrollToPosition(rawData.length, true);
+            window.addEventListener("resize", () => {
+                chart.resize(chartEl.offsetWidth || 800, 500);
+            });
+
+        
+            console.log("✅ Prediction chart rendered successfully.");
+        });
+        </script>
+        
+
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            const rawLineData = JSON.parse(document.getElementById("prediction-chart-data").textContent.trim());
+            const pastLine = rawLineData.filter(d => !d.predicted);
+            const predictedLine = rawLineData.filter(d => d.predicted);
+          
+            // Extract date & close for line chart
+            const pastDates = pastLine.map(d => new Date(d.time * 1000).toLocaleDateString());
+            const pastClose = pastLine.map(d => d.close);
+          
+            const predictedDates = predictedLine.map(d => new Date(d.time * 1000).toLocaleDateString());
+            const predictedClose = predictedLine.map(d => d.close);
+          
+            const ctx = document.getElementById('line-forecast-chart').getContext('2d');
+          
+            new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: [...pastDates, ...predictedDates],
+                datasets: [
+                  {
+                    label: 'Past 30 Days',
+                    data: pastClose,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'transparent',
+                    tension: 0.3
+                  },
+                  {
+                    label: 'Next 7 Days',
+                    data: Array(pastClose.length).fill(null).concat(predictedClose),
+                    borderColor: 'orange',
+                    backgroundColor: 'transparent',
+                    borderDash: [5, 5],
+                    tension: 0.3
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    ticks: {
+                      maxTicksLimit: 10,
+                    }
+                  },
+                  y: {
+                    title: {
+                      display: true,
+                      text: 'Closing Price'
+                    }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    display: true
+                  },
+                  title: {
+                    display: true,
+                    text: 'Forecast vs History'
+                  }
+                }
+              }
+            });
+          });
+          </script>
+          
+    
+
+
+

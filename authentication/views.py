@@ -10,24 +10,7 @@ from django.shortcuts import redirect
 
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-import csv
-import yfinance as yf
-import pandas as pd
 
-
-
-# Function to get stock info using yfinance
-def get_stock_info(ticker):
-    stock = yf.Ticker(ticker)
-    info = stock.info  # Fetch stock details
-
-    return {
-        "symbol": ticker,
-        "market_cap": info.get("marketCap", "N/A"),
-        "industry": info.get("industry", "N/A"),
-        "company": info.get("longName", "N/A"),
-        "revenue": info.get("totalRevenue", "N/A"),
-    }
 
 # Create your views here.
 recent_news = [

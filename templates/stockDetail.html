@@ -5,23 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Details</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-100">
 
-  {% extends 'base.html' %}
-  
-  {% block content %}
-  <div class="flex">
-      {% include 'sidebar.html' %}
-       <!-- Alert Container (Fixed to Top-Right) -->
-       <div id="alert-container" class="fixed top-5 right-5 z-[9999] flex flex-col space-y-2 pointer-events-none"></div>
+{% extends 'base.html' %}
 
-      <!-- Main Content -->
-      <main class="flex-1 p-6 lg:ml-[180px] mt-16">
-        
-        <!-- Stock Header -->
+{% block content %}
+<div class="flex">
+    {% include 'sidebar.html' %}
+    <div id="alert-container" class="fixed top-5 right-5 z-[9999] flex flex-col space-y-2 pointer-events-none"></div>
+
+    <main class="flex-1 p-6 lg:ml-[180px] mt-16">
+
+        <!-- Header -->
         <div class="bg-white shadow-lg p-6 rounded-lg">
             <div class="flex justify-between items-center">
                 <div>
@@ -29,15 +26,12 @@
                     <p class="text-gray-600">NEPSE: {{ stock.symbol }} • Real-Time Price • {{ stock.currency }}</p>
                 </div>
                 <div class="flex space-x-4">
-                    <!-- Watchlist Button -->
                     {% if user.is_authenticated %}
                     <div id="watchlist-button-wrapper">
                         {% if is_in_watchlist %}
-                            <a href="{% url 'watchlists' %}" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700" id="view-watchlist-btn">
-                                ✅ View in Watchlist
-                            </a>
+                        <a href="{% url 'watchlists' %}" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">✅ View in Watchlist</a>
                         {% else %}
-                            <button id="watchlist-btn"
+                        <button id="watchlist-btn"
                                 data-symbol="{{ stock.symbol }}"
                                 data-company="{{ stock.company }}"
                                 data-price="{{ stock.price }}"
@@ -47,200 +41,77 @@
                                 data-week_52="{{ stock.week_52 }}"
                                 onclick="openWatchlistModal(this)"
                                 class="bg-[#002F7B] text-white px-5 py-2 rounded-lg shadow-md hover:bg-[#001A4D] flex items-center space-x-2">
-                                ➕ Add to Watchlist
-                            </button>
+                            ➕ Add to Watchlist
+                        </button>
                         {% endif %}
                     </div>
-                {% endif %}
-                
-                <!-- Watchlist Modal -->
-                <div id="watchlist-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div class="bg-white rounded-lg p-6 shadow-lg w-96">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Add to Watchlist</h2>
-                    <p id="watchlist-message" class="text-gray-700 mb-6">Do you want to add this stock?</p>
-                    <div class="flex justify-end space-x-4">
-                        <button onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Cancel</button>
-                        <button onclick="addToWatchlist()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add</button>
+                    {% endif %}
+
+                    <div id="watchlist-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                        <div class="bg-white rounded-lg p-6 shadow-lg w-96">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4">Add to Watchlist</h2>
+                            <p id="watchlist-message" class="text-gray-700 mb-6">Do you want to add this stock?</p>
+                            <div class="flex justify-end space-x-4">
+                                <button onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Cancel</button>
+                                <button onclick="addToWatchlist()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add</button>
+                            </div>
+                        </div>
                     </div>
-                    </div>
-                </div>
-  
 
-
-
-                    <!-- Compare Button -->
-                        <button onclick="redirectToCompare('{{ stock.symbol }}')"
-                        class="bg-[#002F7B] text-white px-5 py-2 rounded-lg shadow-md hover:bg-[#001A4D] flex items-center space-x-2">
+                    <button onclick="redirectToCompare('{{ stock.symbol }}')" class="bg-[#002F7B] text-white px-5 py-2 rounded-lg shadow-md hover:bg-[#001A4D] flex items-center space-x-2">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V3m6 3V3M6 3v3m12 9v3m-6-3v3M6 15v3m12-9h3m-3 6h3m-3-3h3M3 12h3m-3-3h3m-3 6h3M3 12h3m12 0h3" />
                         </svg>
                         <span>Compare</span>
-                        </button>
-
-                        <script>
+                    </button>
+                    <script>
                         function redirectToCompare(symbol) {
                             window.location.href = `/compare_stocks/?symbol=${symbol}`;
                         }
-                        </script>
-
-                
-
+                    </script>
                 </div>
             </div>
 
             <div class="mt-4 flex items-center space-x-6">
                 <h2 class="text-4xl font-bold">{{ stock.price|default:"N/A" }}</h2>
                 {% if stock.price_change > 0 %}
-                    <p class="text-green-600 text-xl flex items-center space-x-1">
-                        <span>↑</span>
-                        <span>{{ stock.price_change }} ({{ stock.percentage_change }}%)</span>
-                    </p>
+                <p class="text-green-600 text-xl flex items-center space-x-1"><span>↑</span><span>{{ stock.price_change }} ({{ stock.percentage_change }}%)</span></p>
                 {% elif stock.price_change < 0 %}
-                    <p class="text-red-600 text-xl flex items-center space-x-1">
-                        <span>↓</span>
-                        <span>{{ stock.price_change }} ({{ stock.percentage_change }}%)</span>
-                    </p>
+                <p class="text-red-600 text-xl flex items-center space-x-1"><span>↓</span><span>{{ stock.price_change }} ({{ stock.percentage_change }}%)</span></p>
                 {% else %}
-                    <p class="text-gray-500 text-xl">
-                        No change
-                    </p>
+                <p class="text-gray-500 text-xl">No change</p>
                 {% endif %}
-
             </div>
             <p class="text-gray-500">At close: {{ stock.date|default:"N/A" }}</p>
         </div>
-
-         <!-- Alert Messages -->
-         <div id="alert-container" class="mt-4"></div>
 
         <!-- Tabs -->
         <div class="mt-6 border-b rounded-lg p-3">
             <ul class="flex space-x-6">
                 <li class="tab-link py-2 px-4 cursor-pointer border-b-2 border-blue-600 text-blue-600 active hover:bg-gray-200 rounded-t-lg" data-tab="overview">Overview</li>
-                <li class="tab-link py-2 px-4 text-gray-600 cursor-pointer hover:bg-gray-200 rounded-t-lg" data-tab="history">History</li> 
-                <li class="tab-link py-2 px-4 text-gray-600 cursor-pointer hover:bg-gray-200 rounded-t-lg" id="prediction-tab" data-tab="prediction">Prediction</li>
+                <li class="tab-link py-2 px-4 text-gray-600 cursor-pointer hover:bg-gray-200 rounded-t-lg" data-tab="history">History</li>
+                <li class="tab-link py-2 px-4 text-gray-600 cursor-pointer hover:bg-gray-200 rounded-t-lg" data-tab="prediction">Prediction</li>
                 <li class="tab-link py-2 px-4 text-gray-600 cursor-pointer hover:bg-gray-200 rounded-t-lg" data-tab="sentiment">Sentiment Score</li>
             </ul>
         </div>
 
-        <!-- Tab Contents -->
-        <div id="overview" class="tab-content">{% include 'stocksOverview.html'  with historical_chart_data=historical_chart_data %}</div>
-        <div id="history" class="tab-content"> {% include 'stocksHistory.html' with historical_chart_data=historical_chart_data %}</div>          
+        <!-- Tab Content -->
+        <div id="overview" class="tab-content">{% include 'stocksOverview.html' with historical_chart_data=historical_chart_data %}</div>
+        <div id="history" class="tab-content hidden">{% include 'stocksHistory.html' with historical_chart_data=historical_chart_data %}</div>
         <div id="prediction" class="tab-content hidden">{% include 'stocksPrediction.html' %}</div>
         <div id="sentiment" class="tab-content hidden">{% include 'stocksSentiment.html' %}</div>
 
-
-               
-
+        <!-- Scripts -->
         <script>
-            let selectedStockSymbol = "";
-            let selectedStockName = "";
-
-            function openWatchlistModal(button) {
-                const symbol = button.getAttribute("data-symbol");
-                const company = button.getAttribute("data-company");
-
-                selectedStockSymbol = symbol;
-                selectedStockName = company;
-
-                document.getElementById("watchlist-message").innerText = `Do you want to add ${company} (${symbol}) to your watchlist?`;
-                document.getElementById("watchlist-modal").classList.remove("hidden");
-            }
-
-            function closeModal() {
-                document.getElementById("watchlist-modal").classList.add("hidden");
-            }
-
-            function addToWatchlist() {
-            const btn = document.getElementById("watchlist-btn");
-            const data = {
-                symbol: btn.dataset.symbol,
-                company: btn.dataset.company,
-                price: parseFloat(btn.dataset.price),
-                volume: parseInt(btn.dataset.volume.replace(",", "")),
-                market_cap: btn.dataset.market_cap,
-                public_shares: btn.dataset.public_shares,
-                week_52: btn.dataset.week_52,
-            };
-
-            fetch("/add_to_watchlist/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data)
-            })
-            .then(res => res.json())
-            .then(data => {
-                closeModal(); // Hide modal
-
-                if (data.success) {
-                    // Show success alert
-                    showAlert("success", data.message);
-
-                    // Replace button with "View in Watchlist"
-                    const wrapper = document.getElementById("watchlist-button-wrapper");
-                    wrapper.innerHTML = `
-                        <a href="/watchlists/" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-                            ✅ View in Watchlist
-                        </a>
-                    `;
+            function waitForChartToBeReady(callback) {
+                const el = document.getElementById("candlestick-chart");
+                if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+                    callback();
                 } else {
-                    showAlert("error", data.error || "Something went wrong.");
-                }
-            })
-            .catch(error => {
-                showAlert("error", "Error adding to watchlist.");
-                console.error("Watchlist Error:", error);
-            });
-        }
-
-
-
-
-            function showAlert(type, message) {
-            const alertContainer = document.getElementById("alert-container");
-
-            // Create alert div with increased width and no close button
-            const alert = document.createElement("div");
-            alert.className = `bg-${getAlertColor(type)}-100 border border-${getAlertColor(type)}-400 text-${getAlertColor(type)}-700 px-6 py-4 rounded shadow-lg flex items-center transition-opacity duration-500 ease-in-out opacity-100 mt-14 max-w-[700px] w-full relative pointer-events-auto`;
-            alert.innerHTML = `
-                <strong class="font-bold">${capitalize(type)}:</strong>
-                <span class="ml-2">${message}</span>
-            `;
-
-            // Append to alert container
-            alertContainer.appendChild(alert);
-
-            // Remove alert after 10 seconds with fade-out effect
-            setTimeout(() => {
-                alert.classList.add("opacity-0");
-                setTimeout(() => alert.remove(), 500);
-            }, 4000);
-        }
-
-
-            function removeAlert(button) {
-                let alertBox = button.parentElement;
-                alertBox.classList.add("opacity-0");
-                setTimeout(() => alertBox.remove(), 500);
-            }
-
-            function getAlertColor(type) {
-                switch (type) {
-                    case "success": return "green";
-                    case "error": return "red";
-                    case "warning": return "yellow";
-                    case "info": return "blue";
-                    default: return "gray";
+                    requestAnimationFrame(() => waitForChartToBeReady(callback));
                 }
             }
 
-            function capitalize(str) {
-                return str.charAt(0).toUpperCase() + str.slice(1);
-            }
-
-            // Tab Switching Script
             document.addEventListener("DOMContentLoaded", function () {
                 document.querySelectorAll(".tab-content").forEach(content => content.classList.add("hidden"));
                 document.getElementById("overview").classList.remove("hidden");
@@ -252,14 +123,104 @@
 
                         document.querySelectorAll(".tab-link").forEach(t => t.classList.remove("border-blue-600", "text-blue-600"));
                         this.classList.add("border-blue-600", "text-blue-600");
+
+                        if (this.dataset.tab === "prediction" && !window.predictionChartInitialized) {
+                            waitForChartToBeReady(() => {
+                                if (typeof window.renderPredictionChart === "function") {
+                                    console.log("📊 Chart container ready. Now rendering...");
+                                    window.renderPredictionChart();
+                                    window.predictionChartInitialized = true;
+                                }
+                            });
+                        }
                     });
                 });
             });
         </script>
+        <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+        <script>
+        window.renderPredictionChart = function () {
+            console.log("📈 Starting Prediction Chart Render...");
 
-        
+            // ✅ Corrected IDs to target only the prediction chart
+            const chartEl = document.getElementById("prediction-candlestick-chart");
+            const scriptTag = document.getElementById("prediction-chart-data");
+            const tooltip = document.getElementById("chart-tooltip-container");
+
+            if (!chartEl || !scriptTag) {
+                console.error("❌ Chart or Data Script not found.");
+                return;
+            }
+
+            let rawData = [];
+            try {
+                rawData = JSON.parse(scriptTag.textContent.trim());
+                console.log("✅ Parsed chart data length:", rawData.length);
+            } catch (e) {
+                console.error("❌ Error parsing JSON:", e);
+                return;
+            }
+
+            const cleanData = rawData.filter(d =>
+                typeof d.time === "number" &&
+                typeof d.open === "number" &&
+                typeof d.high === "number" &&
+                typeof d.low === "number" &&
+                typeof d.close === "number"
+            );
+
+            if (!cleanData.length) {
+                console.warn("⚠️ No clean candlestick data found.");
+                return;
+            }
+
+            const chart = LightweightCharts.createChart(chartEl, {
+                width: chartEl.offsetWidth || 1000,
+                height: chartEl.offsetHeight || 500,
+                layout: { background: { color: "#fff" }, textColor: "#000" },
+                grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
+                timeScale: { timeVisible: true, borderColor: "#ccc" },
+                priceScale: { borderColor: "#ccc" },
+                handleScroll: { mouseWheel: true, pressedMouseMove: true },
+                handleScale: { mouseWheel: true, pinch: true },
+            });
+
+            const candleSeries = chart.addCandlestickSeries();
+            candleSeries.setData(cleanData);
+
+            const markers = cleanData
+                .filter(d => d.predicted)
+                .map(d => ({
+                    time: d.time,
+                    position: "aboveBar",
+                    color: "orange",
+                    shape: "arrowUp",
+                    text: "Predicted"
+                }));
+
+            if (markers.length) {
+                candleSeries.setMarkers(markers);
+                console.log("🟠 Added predicted markers:", markers.length);
+            }
+
+            chart.subscribeCrosshairMove(param => {
+                const d = param.seriesData.get(candleSeries);
+                tooltip.innerHTML = d
+                    ? `<div class="bg-white border p-2 rounded shadow inline-block">🕯️ <strong>OHLC</strong> | Open: ${d.open}, High: ${d.high}, Low: ${d.low}, Close: ${d.close}</div>`
+                    : "";
+            });
+
+            chart.timeScale().scrollToPosition(cleanData.length, true);
+            setTimeout(() => chart.resize(chartEl.offsetWidth || 1000, 500), 500);
+            window.addEventListener("resize", () => chart.resize(chartEl.offsetWidth || 1000, 500));
+
+            console.log("✅ Prediction chart rendered successfully.");
+        };
+        </script>
+
+
     </main>
-  </div>
-  {% endblock %}
+</div>
+{% endblock %}
 </body>
 </html>

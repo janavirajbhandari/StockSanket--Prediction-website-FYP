@@ -24,7 +24,7 @@ urlpatterns = [
 
 
     path('articles/', stock_views.blog_articles_view, name="articles"),
-    path("predict/<str:symbol>/", stock_views.stock_prediction_view, name="predict_stock"),
+    # path("predict/<str:symbol>/", stock_views.stock_prediction_view, name="predict_stock"),
     path("sentiment/<str:symbol>/", stock_views.StockDetail, name="sentiment_stock"),
     path('loading/<str:symbol>/', stock_views.stock_loading_view, name='stock_loading'),
 

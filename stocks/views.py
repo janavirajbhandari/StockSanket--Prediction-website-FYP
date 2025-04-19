@@ -254,36 +254,8 @@ def compare_stocks_view(request):
     })
 
 
-
-def stock_prediction_view(request, symbol):
-    # Dummy example just to get rid of the error
-    from django.http import JsonResponse
-    forecast = [485.0, 487.0, 490.0, 492.5, 495.0]  # Replace with actual prediction logic
-    accuracy = 87.5
-    return JsonResponse({
-        "symbol": symbol,
-        "forecast": forecast,
-        "accuracy": accuracy
-    })
-
-
-def search_stocks(request):
-    """
-    API to return stock symbols based on search query.
-    """
-    query = request.GET.get("query", "").upper()
-    
-    if not query:
-        return JsonResponse({"stocks": []})
-    
-    stocks = Stock.objects.filter(symbol__startswith=query)[:5]
-    stock_list = [{"symbol": stock.symbol, "name": stock.name} for stock in stocks]
-
-    return JsonResponse({"stocks": stock_list})
-
 from .models import Watchlist
 
-from django.shortcuts import redirect
 
 @csrf_exempt
 def add_to_watchlist(request):
@@ -330,11 +302,6 @@ def add_to_watchlist(request):
 
 
 
-
-
-
-
-@login_required
 def watchlist_view(request):
     watchlist_stocks = Watchlist.objects.all()
 
@@ -351,8 +318,6 @@ def watchlist_view(request):
         })
 
     return render(request, "watchlists.html", {"watchlist": watchlist_data})
-
-
 
 
 
@@ -477,9 +442,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 import os, json
 import pandas as pd
-from datetime import datetime
 from .models import Stock
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def get_csv_index_from_link(link):
     CSV_PATHs = r"C:\Users\Bishal\Desktop\Final Project\StockSanket\merolagani_news.csv"
@@ -491,6 +454,71 @@ def get_csv_index_from_link(link):
         return int(row["index"])
     except:
         return None
+    
+import os
+import json
+
+import os
+import json
+
+def get_prediction_chart_data(symbol):
+    file_path = os.path.join(BASE_DIR, "predictions", symbol.upper(), f"{symbol.upper()}.json")
+
+    print("📁 Trying to load prediction JSON from:", file_path)
+
+    if not os.path.exists(file_path):
+        print("❌ File does NOT exist.")
+        return []
+
+    try:
+        with open(file_path, "r") as f:
+            data = json.load(f)
+            print("✅ JSON file loaded. Keys:", data.keys())
+
+        # Make sure both keys exist
+        past = data.get("past_30_days", [])
+        predicted = data.get("predicted_7_days", [])
+
+        if not past and not predicted:
+            print("⚠️ No 'past_30_days' or 'predicted_7_days' in JSON.")
+            return []
+
+        chart_data = []
+
+        for item in past:
+            if "date" in item:
+                chart_data.append({
+                    "time": int(datetime.strptime(item["date"], "%Y-%m-%d").timestamp()),
+                    "open": item.get("open"),
+                    "high": item.get("high"),
+                    "low": item.get("low"),
+                    "close": item.get("close"),
+                    "predicted": False
+                })
+
+        for item in predicted:
+            if "date" in item:
+                chart_data.append({
+                    "time": int(datetime.strptime(item["date"], "%Y-%m-%d").timestamp()),
+                    "open": item.get("open"),
+                    "high": item.get("high"),
+                    "low": item.get("low"),
+                    "close": item.get("close"),
+                    "predicted": True
+                })
+
+
+        print(f"✅ Final chart data length: {len(chart_data)}")
+        return chart_data
+
+    except Exception as e:
+        print(f"❌ Error loading or parsing prediction JSON: {e}")
+        return []
+
+
+
+from django.utils.safestring import mark_safe
+
 
 def StockDetail(request, symbol):
     try:
@@ -634,6 +662,20 @@ def StockDetail(request, symbol):
         if request.user.is_authenticated:
             is_in_watchlist = Watchlist.objects.filter(symbol=symbol.upper()).exists()
 
+
+           
+        # 🔶 1. Load prediction JSON and create prediction_chart_data
+        prediction_chart_data = get_prediction_chart_data(symbol)
+
+        predicted_data = [
+            {
+                "date": datetime.fromtimestamp(item["time"]).strftime("%B %d, %Y"),
+                "close": round(item["close"], 2)
+            }
+            for item in prediction_chart_data if item.get("predicted")
+        ]
+
+
         context = {
             "stock": stock_info,
             "historical_data": historical_data,  # history tab
@@ -657,8 +699,11 @@ def StockDetail(request, symbol):
             "top_sentiment_label": top_sentiment_label,
             "top_sentiment_value": top_sentiment_value,
             "is_in_watchlist": is_in_watchlist,
+            "prediction_chart_data": json.dumps(prediction_chart_data),
+            "predicted_data": predicted_data,
+
         }
-        
+
 
 
         return render(request, "stockDetail.html", context)
