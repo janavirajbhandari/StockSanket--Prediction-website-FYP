@@ -14,7 +14,7 @@
         {% include 'sidebar.html' %}
     
         <main class="flex-1 p-6 lg:ml-[180px] mt-16">
-    4
+    
             <!-- Title Section -->
             <div>
                 <h1 class="text-[#001F7B] text-3xl font-bold">All Stock Symbols</h1>
@@ -32,37 +32,48 @@
             </div>
     
             <!-- Stocks Table -->
-            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden mt-6">
                 <table class="w-full table-auto border-collapse">
                     <thead class="bg-gray-200">
                         <tr class="text-left">
                             <th class="px-4 py-3">Symbol</th>
-                            <th class="px-4 py-3">Market Cap</th>
-                            <th class="px-4 py-3">Industry</th>
-                            <th class="px-4 py-3">Company</th>
-                            <th class="px-4 py-3">Revenue</th>
+                            <th class="px-4 py-3">Company Name</th>
+                            <th class="px-4 py-3">Website</th>
+                            <th class="px-4 py-3">Sector Name</th>
+                            <th class="px-4 py-3">Regulatory Body</th>
+                            <th class="px-4 py-3">Company Email</th>
+                            <th class="px-4 py-3">Instrument Type</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for stock in stocks %}
                         <tr class="border-b hover:bg-gray-100">
                             <td class="px-4 py-3 text-blue-600 font-medium">
-                                <a href="{% url 'stock_loading' stock.symbol %}">{{ stock.symbol }}</a>
-                                
+                                <a href="{% url 'stockDetail' %}?symbol={{ stock.symbol|urlencode }}">{{ stock.symbol }}</a>
+
                             </td>
-                            <td class="px-4 py-3">{{ stock.market_cap }}</td>
-                            <td class="px-4 py-3">{{ stock.industry }}</td>
-                            <td class="px-4 py-3">{{ stock.company }}</td>
-                            <td class="px-4 py-3">{{ stock.revenue }}</td>
+                            <td class="px-4 py-3">{{ stock.company_name }}</td>
+                            <td class="px-4 py-3">
+                                {% if stock.website %}
+                                    <a href="http://{{ stock.website }}" target="_blank" class="text-blue-500">{{ stock.website }}</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">{{ stock.sector_name }}</td>
+                            <td class="px-4 py-3">{{ stock.regulatory_body }}</td>
+                            <td class="px-4 py-3">{{ stock.company_email }}</td>
+                            <td class="px-4 py-3">{{ stock.instrument_type }}</td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-gray-500">No data available</td>
+                            <td colspan="7" class="text-center py-4 text-gray-500">No data available</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
     
             <!-- Pagination Controls -->
             <div class="flex justify-between items-center mt-6 px-4">
@@ -88,6 +99,12 @@
         </main>
     </div>
     {% endblock %}
+    <script>
+        function redirectToStock(symbol) {
+            // 👇 This triggers the new page load immediately
+            window.location.href = `/stockDetail/${symbol}/`;
+        }
+    </script>
     
 </body>
 </html>

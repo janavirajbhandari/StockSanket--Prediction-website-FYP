@@ -6,68 +6,131 @@ from django.core.paginator import Paginator
 from stocks.models import Stock
 from django.contrib.auth import logout
 from django.shortcuts import redirect
+import pandas as pd
 
 
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-# Create your views here.
-recent_news = [
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling Cautious Optimism", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling Cautious", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling Cautious Optimism", "source": "PYMNTS"},
-    {"time": "8h", "title": "Applications, Signaling Cautious Optimism", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling Cautious Optimism", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling Cautious", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling Cautious Optimism", "source": "PYMNTS"},
-    {"time": "8h", "title": "Applications, Signaling Cautious Optimism", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling Cautious Optimism", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling Cautious", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications", "source": "PYMNTS"},
-    {"time": "8h", "title": "December Sees 1.5% Rise in Business Applications, Signaling Cautious Optimism", "source": "PYMNTS"},
-    {"time": "8h", "title": "Applications, Signaling Cautious Optimism", "source": "PYMNTS"},
-]
 
-def HomePage(request):
-    # Sample data for top gainers
-    top_gainers = [
-        {"symbol": "QIMI", "name": "WiMi Hologram Cloud", "price": "$45", "percentage": "77.8%"},
-        {"symbol": "AAPL", "name": "Apple Inc.", "price": "$178", "percentage": "1.5%"},
-        {"symbol": "GOOGL", "name": "Alphabet Inc.", "price": "$2740", "percentage": "2.3%"},
-         {"symbol": "QIMI", "name": "WiMi Hologram Cloud", "price": "$45", "percentage": "77.8%"},
-        {"symbol": "AAPL", "name": "Apple Inc.", "price": "$178", "percentage": "1.5%"},
-        {"symbol": "GOOGL", "name": "Alphabet Inc.", "price": "$2740", "percentage": "2.3%"},
-         {"symbol": "QIMI", "name": "WiMi Hologram Cloud", "price": "$45", "percentage": "77.8%"},
-        {"symbol": "AAPL", "name": "Apple Inc.", "price": "$178", "percentage": "1.5%"},
-        {"symbol": "GOOGL", "name": "Alphabet Inc.", "price": "$2740", "percentage": "2.3%"},
-    ]
+import requests
 
-    # Sample data for top losers
-    top_losers = [
-        {"symbol": "MSFT", "name": "Microsoft Corp.", "price": "$320", "percentage": "-0.5%"},
-        {"symbol": "TSLA", "name": "Tesla Inc.", "price": "$720", "percentage": "-2.2%"},
-        {"symbol": "AMZN", "name": "Amazon.com Inc.", "price": "$3345", "percentage": "-1.1%"},
-         {"symbol": "MSFT", "name": "Microsoft Corp.", "price": "$320", "percentage": "-0.5%"},
-        {"symbol": "TSLA", "name": "Tesla Inc.", "price": "$720", "percentage": "-2.2%"},
-        {"symbol": "AMZN", "name": "Amazon.com Inc.", "price": "$3345", "percentage": "-1.1%"},
-         {"symbol": "MSFT", "name": "Microsoft Corp.", "price": "$320", "percentage": "-0.5%"},
-        {"symbol": "TSLA", "name": "Tesla Inc.", "price": "$720", "percentage": "-2.2%"},
-        {"symbol": "AMZN", "name": "Amazon.com Inc.", "price": "$3345", "percentage": "-1.1%"},
-    ]
 
-    # Pass data to template
-    context = {
-        "recent_news": recent_news, # Send news to home page
+def HomePages(request):
+      
+      # ✅ Add this inside HomePages view before return statement
+      news_df = pd.read_csv(r"C:\Users\Bishal\Desktop\Final Project\StockSanket\merolagani_news.csv")
+      news_df = news_df.dropna(subset=["title", "date"])
+      news_df["date"] = pd.to_datetime(news_df["date"], errors="coerce")
+      news_df = news_df.dropna(subset=["date"]).sort_values(by="date", ascending=False)
+      news_df["date"] = news_df["date"].dt.strftime("%Y-%m-%d %H:%M")
+      latest_news = news_df.head(7)[["title", "date"]].to_dict(orient="records")
+
+      top_gainers = []
+      top_losers = []
+
+    # --- Fetch Top Gainers ---
+      try:
+        gainers_response = requests.get("http://localhost:8001/TopGainers")
+        gainers_response.raise_for_status()
+        gainers_data = gainers_response.json()[:10]  # ⬅️ Limit to top 10
+
+        for item in gainers_data:
+            top_gainers.append({
+                "symbol": item.get("symbol"),
+                "name": item.get("securityName"),
+                "price": item.get("ltp"),
+                "percentage": item.get("percentageChange"),
+            })
+      except Exception as e:
+        print("❌ Failed to fetch Top Gainers:", e)
+
+    # --- Fetch Top Losers ---
+      try:
+        losers_response = requests.get("http://localhost:8001/TopLosers")
+        losers_response.raise_for_status()
+        losers_data = losers_response.json()[:10]  # ⬅️ Limit to top 10
+
+        for item in losers_data:
+            top_losers.append({
+                "symbol": item.get("symbol"),
+                "name": item.get("securityName"),
+                "price": item.get("ltp"),
+                "percentage": item.get("percentageChange"),
+            })
+      except Exception as e:
+        print("❌ Failed to fetch Top Losers:", e)
+
+      try:
+        response = requests.get("http://localhost:8001/PriceVolume")
+        response.raise_for_status()
+        live_data = response.json()
+        print("✅ Live Market Data:", live_data)  # Add this line
+      except Exception as e:
+        print("❌ Error fetching LiveMarket data:", e)
+        live_data = []
+
+      ticker_data = []
+      for item in live_data:
+        if item.get("symbol") and item.get("lastTradedPrice") is not None:
+            ticker_data.append({
+                "symbol": item["symbol"],
+                "price": item["lastTradedPrice"],
+                "change": round(item["percentageChange"], 2),
+                "is_up": item["percentageChange"] >= 0
+            })
+
+      print("✅ Parsed Ticker Data:", ticker_data)  # Add this line
+
+      context = {
+        "ticker_data": ticker_data,
+        "recent_news": latest_news,
         "top_gainers": top_gainers,
-        "top_losers": top_losers
+        "top_losers": top_losers,
     }
-    
-    return render(request, 'home.html', context)
+      return render(request, 'home.html', context)
+
+
+def news_detail(request, news_id):
+    df = pd.read_csv(CSV_PATH)
+    df = df.dropna(subset=["link", "title", "date"]).reset_index(drop=True)
+
+    try:
+        article_data = df.iloc[int(news_id)]
+        url = article_data["link"]
+
+        response = requests.get(url)
+        response.encoding = 'utf-8'
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        img_tag = soup.find("img")
+        featured_image_url = img_tag['src'] if img_tag else None
+
+        content_div = soup.find("div", id="ctl00_ContentPlaceHolder1_newsDetail")
+        content_html = content_div.decode_contents() if content_div else "Content not available"
+
+        context = {
+            "article": {
+                "title": article_data["title"],
+                "date": article_data["date"], 
+                "content": content_html,
+                "image_url": featured_image_url
+            }
+        }
+
+        return render(request, "news_detail.html", context)
+
+    except Exception as e:
+        return render(request, "news_detail.html", {
+            "article": {
+                "title": "Error loading article",
+                "date": "",
+                "content": f"❌ Error: {str(e)}"
+            }
+        })
+
+
 
 def SignupPage(request):
     if request.method=='POST':
@@ -103,15 +166,7 @@ def LogoutPage(request):
     logout(request)
     return redirect(request.META.get('HTTP_REFERER', 'home'))  # reloads same page or fallback to home
 
-    
-def Articles(request):
-    return render (request,'articles.html')
 
-def News(request):
-    context = {
-        "recent_news": recent_news,
-    }
-    return render(request, 'news.html', context)
 
 
 def StocksView(request):
@@ -125,8 +180,5 @@ def StocksView(request):
     return render(request, 'stocks.html', {"stocks": page_obj})  # ✅ Send database results
 
 
-
-def Watchlists(request):
-    return render (request,'watchlists.html')
 
 

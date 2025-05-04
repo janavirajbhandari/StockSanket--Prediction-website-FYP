@@ -4,15 +4,15 @@ import sys
 from datetime import datetime
 
 def run_command(cmd, label=None):
-    print(f"📦 Running: {label or cmd}")
+    print(f"Running: {label or cmd}")
     result = subprocess.run(cmd, shell=True, text=True)
     if result.returncode != 0:
-        print(f"❌ Failed: {label or cmd}")
+        print(f"Failed: {label or cmd}")
     else:
-        print(f"✅ Done: {label or cmd}")
+        print(f"Done: {label or cmd}")
 
 if __name__ == "__main__":
-    print("🕒 Update started at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    print("Update started at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
     # Move to project base dir just in case it's run from Task Scheduler
     os.chdir("C:/Users/Bishal/Desktop/Final Project/StockSanket")
@@ -32,4 +32,4 @@ if __name__ == "__main__":
     # 5. Run stock prediction notebook for all stocks
     run_command("python run_all_prediction.py", "Run stock predictions")
 
-    print("🏁 Update finished at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    print("Update finished at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))

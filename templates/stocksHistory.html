@@ -27,5 +27,17 @@
             </tbody>
             
         </table>
+        <div class="pagination">
+            {% if historical_data.has_previous %}
+                <a href="?symbol={{ stock.symbol }}&history_page={{ historical_data.previous_page_number }}#history">Previous</a>
+                {% endif %}
+
+                <span>Page {{ historical_data.number }} of {{ historical_data.paginator.num_pages }}</span>
+
+                {% if historical_data.has_next %}
+                <a href="?symbol={{ stock.symbol }}&history_page={{ historical_data.next_page_number }}#history">Next</a>
+                {% endif %}
+
+          </div>
     </div>
 </div>
